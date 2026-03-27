@@ -17,19 +17,25 @@ import re
 # sqlite3 — встроенная база данных SQLite
 import sqlite3
 
+from dotenv import load_dotenv
+import os
+
+# Загружаем переменные из .env файла
+load_dotenv()
 
 # =========================
 # КОНФИГУРАЦИЯ
 # =========================
 
 # Токен Telegram-бота (в реальном проекте должен храниться в переменных окружения)
-TOKEN = "8611652469:AAH7x1nNV0PZSzFTXh7mSIyAcqnowC3eYIk"
+TOKEN = os.getenv("TOKEN")
+
 
 # Базовый URL для Telegram API
 TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}"
 
 # API ключ для сервиса погоды (OpenWeatherMap)
-WEATHER_API_KEY = "2f8e69c290879788ede58c0c7e759957"
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
 # Имя файла базы данных SQLite (будет создан автоматически)
 DB_NAME = "users.db"
