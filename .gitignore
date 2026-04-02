@@ -2,5 +2,5 @@ venv
 tmp
 .env
 users.db
-
+*.pyc
 
