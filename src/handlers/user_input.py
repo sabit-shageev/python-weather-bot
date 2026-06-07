@@ -1,10 +1,10 @@
 from db.database import save_user_to_bd
 from services.validation import is_valid_time, is_valid_city
-from bot.telegram_api import send_message
 from config import STATE_READY
 from services.weather import get_weather, get_weather_forecast
 from db.database import get_user_from_bd
-from bot.telegram_api import send_message
+from bot.telegram_api import send_message, send_keyboard
+from handlers.start import handle_start
 
 def handle_user_input(chat_id, text):
     """
@@ -13,22 +13,36 @@ def handle_user_input(chat_id, text):
     """
 
     try:
-        name, city, user_time = [x.strip() for x in text.split(",")]
+
+        parts = [x.strip() for x in text.split(",")]
+
+        if len(parts) != 3:
+            send_message(chat_id, "Используй формат: Имя, Город, 08:00")
+            return
+
+        name, city, user_time = parts       
+
+        # Проверка города
+        if not is_valid_city(city):
+            send_message(chat_id, "Город не найден\nПопробуйте еще раз\nИспользуй формат: Имя, Город, 08:00")
+            return
 
         # Проверка времени
         if not is_valid_time(user_time):
             send_message(chat_id, "Неверный формат времени")
             return
 
-        # Проверка города
-        if not is_valid_city(city):
-            send_message(chat_id, "Город не найден")
-            return
+
 
         # Сохраняем пользователя
         save_user_to_bd(chat_id, name, city, user_time, STATE_READY)
 
-        send_message(chat_id, "Данные сохранены")
+        send_message(
+            chat_id,
+            f"Готово, {name}. Теперь буду присылать погоду"
+        )
+        
+        send_keyboard(chat_id, "Выберите действие:")
 
     except Exception as e:
         print(e)
@@ -45,6 +59,8 @@ def handle_user_actions(chat_id, text):
         send_message(chat_id, "Сначала настрой бота через /start")
         return
 
+
+    
     # Текущая погода
     if text == "🌤 Текущая погода":
         weather = get_weather(user["city"])
@@ -57,4 +73,6 @@ def handle_user_actions(chat_id, text):
 
     # Настройки
     elif text == "⚙️ Настройки":
-        send_message(chat_id, "Введи данные заново:\nИмя, Город, Время")
+        handle_start(chat_id)
+        # send_message(chat_id, "Введи данные заново:\nИмя, Город, Время", remove_keyboard=True)
+        
