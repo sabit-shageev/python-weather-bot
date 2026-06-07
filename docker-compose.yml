@@ -1,0 +1,42 @@
+volumes:
+  weather_bot_data:
+  postgres_data:
+
+x-app: &app
+  logging:
+    driver: "json-file"
+    options:
+      max-file: "3"
+      max-size: "10m"
+  env_file:
+    - .env
+  restart: no
+
+services:
+  postgres:
+    <<: *app
+    image: postgres:14.0
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    ports:
+      - ${POSTGRES_PORT}:5432
+
+  # redis:
+  #   <<: *app
+  #   image: redis:7.2.5
+  #   volumes:
+  #     - ./src/frameworks_and_drivers/redis/redis.conf:/usr/local/etc/redis/redis.conf
+  #     - redis_data:/data
+  #   ports:
+  #     - ${REDIS_PORT}:6379
+
+  weather_bot:
+    <<: *app
+    container_name: weather_bot
+    build:
+      context: ./
+      dockerfile: src/Dockerfile
+    volumes:
+      - weather_bot_data:/opt/app/src/db/
+    depends_on:
+      - postgres
