@@ -1,121 +1,109 @@
-# db/database.py
-
-import sqlite3
+import psycopg2
+import os
 from datetime import datetime
-from config import DB_NAME
+from dotenv import load_dotenv
 
+load_dotenv()
+
+# Конфигурация подключения к PostgreSQL
+DB_CONFIG = {
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'port': os.getenv('DB_PORT', '5432'),
+    'database': os.getenv('DB_NAME', 'weatherbot'),
+    'user': os.getenv('DB_USER', 'postgres'),
+    'password': os.getenv('DB_PASS', '')
+}
+
+def get_connection():
+    """Возвращает новое соединение с базой данных."""
+    return psycopg2.connect(**DB_CONFIG)
 
 def init_db():
     """
-    Создаёт таблицу пользователей, если она ещё не существует.
+    Создаёт таблицу users, если она ещё не существует.
+    Полный аналог старой SQLite-версии.
     """
-
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            chat_id TEXT PRIMARY KEY,
-            name TEXT,
-            city TEXT,
-            time TEXT,
-            last_sent TEXT,
-            state TEXT
-        )
-    """)
-
-    conn.commit()
-    conn.close()
-
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    chat_id TEXT PRIMARY KEY,
+                    name TEXT,
+                    city TEXT,
+                    time TEXT,
+                    last_sent TEXT,
+                    state TEXT
+                )
+            """)
+        conn.commit()
 
 def save_user_to_bd(chat_id, name, city, time_value, state, last_sent=None):
     """
     Сохраняет или обновляет пользователя.
-    
-    INSERT OR REPLACE:
-    - если user есть → обновит
-    - если нет → создаст
+    В PostgreSQL используем INSERT ... ON CONFLICT (chat_id) DO UPDATE.
     """
-
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        INSERT OR REPLACE INTO users (chat_id, name, city, time, last_sent, state)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (chat_id, name, city, time_value, last_sent, state))
-
-    conn.commit()
-    conn.close()
-
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO users (chat_id, name, city, time, last_sent, state)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (chat_id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    city = EXCLUDED.city,
+                    time = EXCLUDED.time,
+                    last_sent = EXCLUDED.last_sent,
+                    state = EXCLUDED.state
+            """, (chat_id, name, city, time_value, last_sent, state))
+        conn.commit()
 
 def get_user_from_bd(chat_id):
     """
     Получает пользователя по chat_id.
     Возвращает словарь или None.
     """
-
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM users WHERE chat_id = ?", (chat_id,))
-    row = cursor.fetchone()
-
-    conn.close()
-
-    if row:
-        return {
-            "chat_id": row[0],
-            "name": row[1],
-            "city": row[2],
-            "time": row[3],
-            "last_sent": row[4],
-            "state": row[5]
-        }
-
-    return None
-
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM users WHERE chat_id = %s", (chat_id,))
+            row = cur.fetchone()
+            if row:
+                return {
+                    "chat_id": row[0],
+                    "name": row[1],
+                    "city": row[2],
+                    "time": row[3],
+                    "last_sent": row[4],
+                    "state": row[5]
+                }
+            return None
 
 def get_all_users_from_bd():
     """
-    Возвращает список всех пользователей.
+    Возвращает список всех пользователей в виде списка словарей.
     """
-
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM users")
-    rows = cursor.fetchall()
-
-    conn.close()
-
-    # Преобразуем список кортежей в список словарей
-    return [
-        {
-            "chat_id": row[0],
-            "name": row[1],
-            "city": row[2],
-            "time": row[3],
-            "last_sent": row[4],
-            "state": row[5]
-        }
-        for row in rows
-    ]
-
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT * FROM users")
+            rows = cur.fetchall()
+            return [
+                {
+                    "chat_id": row[0],
+                    "name": row[1],
+                    "city": row[2],
+                    "time": row[3],
+                    "last_sent": row[4],
+                    "state": row[5]
+                }
+                for row in rows
+            ]
 
 def update_last_sent(chat_id):
     """
     Обновляет дату последней отправки сообщения.
     """
-
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-
     today = datetime.now().strftime("%Y-%m-%d")
-
-    cursor.execute("""
-        UPDATE users SET last_sent = ? WHERE chat_id = ?
-    """, (today, chat_id))
-
-    conn.commit()
-    conn.close()
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE users SET last_sent = %s WHERE chat_id = %s
+            """, (today, chat_id))
+        conn.commit()
