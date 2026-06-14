@@ -1,18 +1,16 @@
 import time
-
 from db.database import init_db, get_user_from_bd
 from bot.telegram_api import get_updates_from_tg
-
 from handlers.start import handle_start
 from handlers.user_input import handle_user_input, handle_user_actions
-
 from scheduler.mailing import process_mailing
-
 from config import STATE_WAITING_INFO, STATE_READY
+from src.logger import setup_logger
 
+logger = setup_logger("main")
 
 def main():
-    print("🤖 Бот запущен")
+    logger.info("🤖 Бот запущен")
 
     init_db()
     offset = None
@@ -35,7 +33,7 @@ def main():
                     continue
 
                 # 🔍 для дебага (очень полезно)
-                print(f"[{chat_id}] -> {text}")
+                logger.debug(f"[{chat_id}] -> {text}")
 
                 # ===== ПОЛУЧАЕМ ПОЛЬЗОВАТЕЛЯ =====
                 user = get_user_from_bd(chat_id)
@@ -90,7 +88,7 @@ def main():
             time.sleep(2)
 
         except Exception as e:
-            print(f"❌ Ошибка в main loop: {e}")
+            logger.error(f"❌ Ошибка в main loop: {e}")
             time.sleep(2)
 
 

@@ -1,6 +1,9 @@
 import requests
 import json
 from config import TELEGRAM_URL
+from src.logger import setup_logger
+
+logger = setup_logger("telegram_api")
 
 
 def get_updates_from_tg(offset=None):
@@ -19,7 +22,7 @@ def get_updates_from_tg(offset=None):
         return response.json()
 
     except Exception as e:
-        print("get_updates error:", e)
+        logger.error("get_updates error:", e)
         return {"result": []}
 
 
