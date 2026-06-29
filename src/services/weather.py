@@ -1,7 +1,12 @@
-# services/weather.py
-
 import requests
 from config import WEATHER_API_KEY
+from services.cache import (
+    get_cached_weather, set_cached_weather,
+    get_cached_forecast, set_cached_forecast
+)
+from src.logger import setup_logger
+
+logger = setup_logger("weather")
 
 
 def get_weather_emoji(weather_id):
@@ -26,14 +31,23 @@ def get_weather_emoji(weather_id):
 
 
 def get_weather(city):
-    """
-    Делает запрос к OpenWeather API и возвращает красиво оформленный текст.
-    """
+    # 1. Пробуем взять из кэша
+    cached = get_cached_weather(city)
+    if cached:
+        logger.debug(f"📦 Кэш для {city}")  # опционально для лога
+        return cached
+    else:
+        logger.debug(f"🌍 Запрос в API для {city}")
 
+    # 2. Запрос к API
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=ru"
+    try:
+        data = requests.get(url, timeout=5).json()
+    except Exception as e:
+        return f"⚠️ Ошибка при запросе погоды: {e}"
 
-    # timeout — защита от зависания
-    data = requests.get(url, timeout=5).json()
+    if data.get("cod") != 200:
+        return f"❌ Город {city} не найден."
 
     temp = round(data["main"]["temp"])
     feels = round(data["main"]["feels_like"])
@@ -41,35 +55,45 @@ def get_weather(city):
     wind_speed = data["wind"]["speed"]
     humidity = data["main"]["humidity"]
     weather_id = data["weather"][0]["id"]
-
     emoji = get_weather_emoji(weather_id)
 
-    return f"""🌍 Погода в {city}:
+    result = f"""🌍 Погода в {city}:
 {emoji} {desc.capitalize()}
 🌡 {temp}°C
 🤔 Ощущается как: {feels}°C
 🍃 Ветер: {wind_speed} м/с
 💧 Влажность: {humidity}%"""
 
+    # 3. Сохраняем в кэш на 10 минут
+    set_cached_weather(city, result)
+    logger.debug(f"💾 Сохранено в кэш: {city}")
+    return result
+
 
 def get_weather_forecast(city):
-    """
-    Прогноз погоды на ближайшие 24 часа
-    """
+    # Кэш для прогноза
+    cached = get_cached_forecast(city)
+    if cached:
+        logger.debug(f"📦 Кэш прогноза для {city}")
+        return cached
 
     url = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=ru"
+    try:
+        data = requests.get(url, timeout=5).json()
+    except Exception as e:
+        return f"⚠️ Ошибка при запросе прогноза: {e}"
 
-    data = requests.get(url, timeout=5).json()
+    if data.get("cod") != "200":
+        return f"❌ Не удалось получить прогноз для {city}."
 
-    forecast_list = data["list"][:8]  # 8 * 3 часа = 24 часа
-
+    forecast_list = data["list"][:8]
     result = f"📊 Прогноз на 24 часа в {city}:\n\n"
-
     for item in forecast_list:
         time = item["dt_txt"].split(" ")[1][:5]
         temp = round(item["main"]["temp"])
         desc = item["weather"][0]["description"]
-
         result += f"{time} — {temp}°C, {desc}\n"
 
+    # Кэшируем прогноз на час (погода меняется не так быстро)
+    set_cached_forecast(city, result)
     return result
