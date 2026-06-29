@@ -2,17 +2,10 @@ import psycopg2
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from config import DB_CONFIG
 
 load_dotenv()
 
-# Конфигурация подключения к PostgreSQL
-DB_CONFIG = {
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'port': os.getenv('DB_PORT', '5432'),
-    'database': os.getenv('DB_NAME', 'weatherbot'),
-    'user': os.getenv('DB_USER', 'postgres'),
-    'password': os.getenv('DB_PASS', '')
-}
 
 def get_connection():
     """Возвращает новое соединение с базой данных."""
