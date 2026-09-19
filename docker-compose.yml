@@ -1,6 +1,6 @@
 volumes:
-  weather_bot_data:
   postgres_data:
+
 
 x-app: &app
   logging:
@@ -21,14 +21,12 @@ services:
     ports:
       - ${POSTGRES_PORT}:5432
 
-  # redis:
-  #   <<: *app
-  #   image: redis:7.2.5
-  #   volumes:
-  #     - ./src/frameworks_and_drivers/redis/redis.conf:/usr/local/etc/redis/redis.conf
-  #     - redis_data:/data
-  #   ports:
-  #     - ${REDIS_PORT}:6379
+  redis:
+    <<: *app
+    image: redis:7.2.5
+    ports:
+      - ${REDIS_PORT}:6379
+    restart: unless-stopped  
 
   weather_bot:
     <<: *app
@@ -36,7 +34,8 @@ services:
     build:
       context: ./
       dockerfile: src/Dockerfile
-    volumes:
-      - weather_bot_data:/opt/app/src/db/
+    environment:
+      TZ: Europe/Moscow
     depends_on:
       - postgres
+      - redis

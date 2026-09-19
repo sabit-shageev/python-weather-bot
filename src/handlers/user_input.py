@@ -5,6 +5,9 @@ from services.weather import get_weather, get_weather_forecast
 from db.database import get_user_from_bd
 from bot.telegram_api import send_message, send_keyboard
 from handlers.start import handle_start
+from src.logger import setup_logger
+
+logger = setup_logger("user_input")
 
 def handle_user_input(chat_id, text):
     """
@@ -45,7 +48,7 @@ def handle_user_input(chat_id, text):
         send_keyboard(chat_id, "Выберите действие:")
 
     except Exception as e:
-        print(e)
+        logger.warning(e)
         send_message(chat_id, "Ошибка формата")
 
 def handle_user_actions(chat_id, text):
