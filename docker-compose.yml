@@ -1,7 +1,7 @@
 volumes:
-  weather_bot_data:
   postgres_data:
   redis_data:
+
 
 x-app: &app
   logging:

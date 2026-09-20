@@ -38,13 +38,6 @@ def main():
                 # ===== ПОЛУЧАЕМ ПОЛЬЗОВАТЕЛЯ =====
                 user = get_user_from_bd(chat_id)
 
-                # if user and user["state"] == STATE_WAITING_INFO:
-                #     # обрабатываем ТОЛЬКО ввод данных
-                #     handle_user_input(...)
-                #     continue
-                # if user and user["state"] == STATE_WAITING_INFO:
-                #     handle_user_input(chat_id, text)
-                #     continue  
                 # =================================================
                 # 🔥 1. /start ВСЕГДА ПЕРВЫЙ (это КРИТИЧНО)
                 # =================================================

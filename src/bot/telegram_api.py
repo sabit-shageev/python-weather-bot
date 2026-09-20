@@ -26,25 +26,6 @@ def get_updates_from_tg(offset=None):
         return {"result": []}
 
 
-# def send_message(chat_id, text):
-#     """
-#     Отправляет обычное сообщение пользователю.
-#     """
-#     try:
-#         url = f"{TELEGRAM_URL}/sendMessage"
-
-#         requests.post(
-#             url,
-#             json={
-#                 "chat_id": chat_id,
-#                 "text": text
-#             },
-#             timeout=5
-#         )
-
-#     except Exception as e:
-#         print("send_message error:", e)
-
 def send_message(chat_id, text, remove_keyboard=False):
     url = f"{TELEGRAM_URL}/sendMessage"
 
