@@ -96,5 +96,9 @@ def feature_1():
     print(1)
 
 
+def feature_2():
+    print(2)
+
+
 if __name__ == "__main__":
     main()
