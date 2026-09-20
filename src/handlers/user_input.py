@@ -1,7 +1,7 @@
 from db.database import save_user_to_bd
 from services.validation import is_valid_time, is_valid_city
 from config import STATE_READY
-from services.weather import get_weather, get_weather_forecast
+from services.weather import get_weather, get_weather_forecast, get_timezone_offset
 from db.database import get_user_from_bd
 from bot.telegram_api import send_message, send_keyboard
 from handlers.start import handle_start
@@ -38,7 +38,16 @@ def handle_user_input(chat_id, text):
 
 
         # Сохраняем пользователя
-        save_user_to_bd(chat_id, name, city, user_time, STATE_READY)
+        timezone_offset = get_timezone_offset(city)
+
+        save_user_to_bd(
+            chat_id=chat_id,
+            name=name,
+            city=city,
+            time_value=user_time,
+            state=STATE_READY,
+            timezone_offset=timezone_offset 
+        )
 
         send_message(
             chat_id,
@@ -48,8 +57,8 @@ def handle_user_input(chat_id, text):
         send_keyboard(chat_id, "Выберите действие:")
 
     except Exception as e:
-        logger.warning(e)
-        send_message(chat_id, "Ошибка формата")
+        logger.error(f"Ошибка в handle_user_input: {e}", exc_info=True)
+        send_message(chat_id, f"Ошибка: {str(e)}")
 
 def handle_user_actions(chat_id, text):
     """

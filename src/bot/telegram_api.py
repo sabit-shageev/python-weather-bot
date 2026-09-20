@@ -22,7 +22,7 @@ def get_updates_from_tg(offset=None):
         return response.json()
 
     except Exception as e:
-        logger.error("get_updates error:", e)
+        logger.error(f"get_updates error: {e}", exc_info=True)
         return {"result": []}
 
 

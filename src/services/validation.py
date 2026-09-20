@@ -32,12 +32,11 @@ def is_valid_city(city):
         return False
 
 
-def is_time_to_send(user_time):
+def is_time_to_send(current_time_str, user_time):
     """
-    Проверяет, пора ли отправлять сообщение.
+    Проверяет, совпадает ли текущее локальное время пользователя с заданным.
     """
-
-    return datetime.now().strftime("%H:%M") == user_time
+    return current_time_str == user_time
 
 
 def already_sent_today(user):
