@@ -97,3 +97,36 @@ def get_weather_forecast(city):
     # Кэшируем прогноз на час (погода меняется не так быстро)
     set_cached_forecast(city, result)
     return result
+
+def get_timezone_offset(city: str) -> int:
+    """
+    Возвращает смещение часового пояса города от UTC в секундах.
+    Использует API прогноза (/forecast), потому что в нём есть поле timezone.
+    
+    Аргументы:
+        city (str): Название города
+        
+    Возвращает:
+        int: Смещение в секундах (например, 10800 для Москвы, UTC+3).
+             Если не удалось определить — возвращает 0 (UTC).
+    """
+    try:
+        # Формируем URL для API прогноза (не текущей погоды)
+        url = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={WEATHER_API_KEY}&units=metric"
+        
+        # Отправляем запрос
+        response = requests.get(url, timeout=5)
+        data = response.json()
+        
+        # В ответе прогноза есть поле city.timezone
+        if data.get("city") and "timezone" in data["city"]:
+            return data["city"]["timezone"]  # возвращаем смещение в секундах
+        
+        # Если поле timezone отсутствует — возвращаем 0 (UTC)
+        return 0
+        
+    except Exception as e:
+        # Если произошла ошибка (нет интернета, город не найден и т.д.)
+        # логируем и возвращаем 0 (UTC)
+        logger.warning(f"Не удалось определить часовой пояс для {city}: {e}")
+        return 0

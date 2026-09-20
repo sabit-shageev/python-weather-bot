@@ -17,6 +17,8 @@ services:
   postgres:
     <<: *app
     image: postgres:14.0
+    environment:
+      - TZ=Europe/Moscow
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
@@ -25,6 +27,8 @@ services:
   redis:
     <<: *app
     image: redis:7.2.5
+    environment:
+      - TZ=Europe/Moscow
     volumes:
       - ./src/frameworks_and_drivers/redis/redis.conf:/usr/local/etc/redis/redis.conf
       - redis_data:/data
@@ -39,16 +43,14 @@ services:
       context: ./
       dockerfile: src/Dockerfile
     environment:
-      # Переменные для PostgreSQL
+      TZ: Europe/Moscow
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASS: ${POSTGRES_PASSWORD}
-      # Переменные для Telegram и погоды
       TOKEN: ${TOKEN}
       WEATHER_API_KEY: ${WEATHER_API_KEY}
-      # Переменные для Redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
     depends_on:
