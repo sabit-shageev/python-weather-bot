@@ -92,5 +92,9 @@ def main():
             time.sleep(2)
 
 
+def feature_1():
+    print(1)
+
+
 if __name__ == "__main__":
     main()
