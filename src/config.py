@@ -12,7 +12,9 @@ TOKEN = os.getenv("TOKEN")
 
 # API ключ погоды
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-
+OPENWEATHER_BASE_URL = "https://api.openweathermap.org/data/2.5"
+WEATHER_URL = f"{OPENWEATHER_BASE_URL}/weather"
+FORECAST_URL = f"{OPENWEATHER_BASE_URL}/forecast"
 # Базовый URL Telegram API
 TELEGRAM_URL = f"https://api.telegram.org/bot{TOKEN}"
 

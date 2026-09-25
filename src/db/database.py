@@ -1,8 +1,8 @@
 import psycopg2
 import os
-from datetime import datetime
 from dotenv import load_dotenv
 from src.logger import setup_logger
+from datetime import datetime, timezone, timedelta
 
 logger = setup_logger("database")
 load_dotenv()
@@ -25,11 +25,10 @@ def get_connection():
 def init_db():
     """
     Создаёт таблицу users, если она ещё не существует.
-    Добавляет колонку timezone_offset, если её нет.
+    Все поля указываются сразу при создании.
     """
     with get_connection() as conn:
         with conn.cursor() as cur:
-            # 1. Создаём таблицу, если её нет
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS users (
                     chat_id TEXT PRIMARY KEY,
@@ -41,24 +40,8 @@ def init_db():
                     timezone_offset INTEGER DEFAULT 0
                 )
             """)
-            
-            # 2. Проверяем, есть ли колонка timezone_offset
-            cur.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name='users' AND column_name='timezone_offset'
-            """)
-            
-            if not cur.fetchone():
-                # 3. Если колонки нет — добавляем
-                cur.execute("""
-                    ALTER TABLE users ADD COLUMN timezone_offset INTEGER DEFAULT 0
-                """)
-                logger.info("✅ Добавлена колонка timezone_offset в таблицу users")
-            else:
-                logger.info("ℹ️ Колонка timezone_offset уже существует")
-            
         conn.commit()
+    logger.info("✅ Таблица users готова")
 
 
 def save_user_to_bd(chat_id, name, city, time_value, state, last_sent=None, timezone_offset=0):
@@ -125,14 +108,19 @@ def get_all_users_from_bd():
             ]
 
 
-def update_last_sent(chat_id):
+def update_last_sent(chat_id, timezone_offset=0):
     """
-    Обновляет дату последней отправки сообщения.
+    Обновляет дату последней отправки сообщения
+    по локальному времени пользователя.
     """
-    today = datetime.now().strftime("%Y-%m-%d")
+    now_utc = datetime.now(timezone.utc)
+    local_now = now_utc + timedelta(seconds=timezone_offset)
+    today_local = local_now.strftime("%Y-%m-%d")
+    
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-                UPDATE users SET last_sent = %s WHERE chat_id = %s
-            """, (today, chat_id))
+            cur.execute(
+                "UPDATE users SET last_sent = %s WHERE chat_id = %s",
+                (today_local, chat_id)
+            )
         conn.commit()
